@@ -1,0 +1,46 @@
+apiVersion: skaffold/v2beta25
+kind: Config
+build:
+  artifacts:
+    - image: {{ short_project_name }}
+      custom:
+        buildCommand: |
+          DOCKER_BUILDKIT=1 docker build --tag $IMAGE --build-arg BUILDKIT_INLINE_CACHE=1{% if github_private_access %} --secret id=GIT_PAT{% endif %} "$BUILD_CONTEXT"
+        dependencies:
+          dockerfile:
+            path: Dockerfile
+deploy:
+  helm:
+    releases:
+      - name: {{ short_project_name }}
+        namespace: {{ short_project_name }}
+        createNamespace: true
+        remoteChart: {{ organization }}/{{ short_project_name }}
+        # chartPath: ../chart-{{ short_project_name }}/chart
+        version: '>=1.0.0-alpha'
+        artifactOverrides:
+          image: {{ short_project_name }}
+        imageStrategy:
+          helm: {}
+        valuesFiles:
+          - skaffold-values.yaml
+portForward:
+  - resourceType: service
+    resourceName: {{ short_project_name }}
+    namespace: {{ short_project_name }}
+    port: 8080
+    localPort: 8080
+profiles:
+  - name: actions
+    activation:
+      - env: SKAFFOLD_ACTIONS=true
+    build:
+      artifacts:
+        - image: {{ short_project_name }}
+          custom:
+            buildCommand: |
+
+              docker buildx build --tag $IMAGE --load --cache-from type=gha,mode=max --cache-to type=gha,mode=max --build-arg BUILDKIT_INLINE_CACHE=1{% if github_private_access %} --secret id=GIT_PAT{% endif %} "$BUILD_CONTEXT"
+            dependencies:
+              dockerfile:
+                path: Dockerfile

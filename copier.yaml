@@ -1,0 +1,133 @@
+_subdirectory: template
+
+full_project_name:
+  type: str
+  help: "Full project name (go module path) ex: github.com/catalystsquad/example-app"
+
+short_project_name:
+  type: str
+  help: "Repository name, ex: example-app"
+  default: "{{ full_project_name | regex_replace('.*/', '') }}"
+
+license_type:
+  type: str
+  help: "License type for the project"
+  default: apache2
+  choices:
+    "Apache 2.0": apache2
+    None: none
+
+githost:
+  type: str
+  help: Git hosting service
+  default: github
+  choices:
+    GitHub: github
+    Other: other
+
+organization:
+  type: str
+  help: "Organization or owner of the repository"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  # escape the escape twice because we are going from yaml to jinja pew pew pew pew
+  default: "{{ full_project_name | regex_replace('^.*?/([^/]+).*$', '\\\\1') }}"
+
+create_settings:
+  type: bool
+  help: "Enable creation of probot .github/settings.yml file"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: true
+
+repo_description:
+  type: str
+  help: "Description of the repository"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: "{{ full_project_name }}"
+
+create_codeowners:
+  type: bool
+  help: "Enable creation of .github/CODEOWNERS file"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: true
+
+codeowners_group:
+  type: str
+  help: "Group to add to CODEOWNERS"
+  when: "{% if githost == 'github' and (create_codeowners or create_settings) %}true{% endif %}"
+  # when: "{% if githost == 'github' %}true{% endif %}"
+  default: engineers
+
+create_workflows:
+  type: bool
+  help: "Enable creation of Github workflows"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: true
+
+image_host:
+  type: str
+  help: "Hosting service for your image"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: aws-ecr
+  choices:
+    AWS ECR: aws-ecr
+    Quay: quay
+
+release_method:
+  type: str
+  help: "Release method to use"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: semantic-release
+  choices:
+    - semantic-release
+    - semver-tags
+    - None
+
+release_git_user_name:
+  type: str
+  help: "User name to use when committing automated release changes"
+  when: "{% if release_method == 'semver-tags' %}true{% endif %}"
+  default: "Catalyst Squad Automation"
+
+release_git_user_email:
+  type: str
+  help: "User email to use when committing automated release changes"
+  when: "{% if release_method == 'semver-tags' %}true{% endif %}"
+  default: "<engineering@catalystsquad.com>"
+
+enable_pull_request_test:
+  type: bool
+  help: "Enable Skaffold tests in pull requests"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: true
+
+github_private_access:
+  type: bool
+  help: "Enable use of of GIT_PAT environment variable to authenticate to Github for private dependency access"
+  when: "{% if githost == 'github' %}true{% endif %}"
+  default: false
+
+grpc_health_probe:
+  type: bool
+  help: "Add GRPC Health Probe to Dockerfile"
+  default: false
+
+image_registry_domain:
+  type: str
+  help: "Image registry name"
+  when: "{% if release_method == 'semver-tags' %}true{% endif %}"
+  default: "{% if image_host == 'quay' %}quay.io{% elif image_host == 'aws-ecr' %}111111111111.dkr.ecr.us-west-2.amazonaws.com{% endif %}"
+
+helm_repo:
+  type: str
+  help: "Helm chart repository to deploy charts to"
+  when: "{% if release_method == 'semver-tags' %}true{% endif %}"
+  default: "{{ organization }}/charts"
+
+db_choice:
+  type: str
+  help: "DB choice for the helm chart"
+  default: Cockroach
+  choices:
+    - Cockroach
+    - Postgres
+    - None

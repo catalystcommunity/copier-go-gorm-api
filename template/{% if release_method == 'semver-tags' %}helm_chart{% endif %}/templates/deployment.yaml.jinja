@@ -1,0 +1,122 @@
+{% raw %}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "catalyst-go-app.fullname" . }}
+  labels:
+    {{- include "catalyst-go-app.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "catalyst-go-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "catalyst-go-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "catalyst-go-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PORT
+              value: {{ .Values.service.port | quote }}
+            - name: HTTP_PORT
+              value: {{ .Values.http.port | quote }}
+            - name: SERVE_HTTP
+              value: {{ .Values.http.enabled | quote }}
+            - name: SCHEDULE_WINDOW
+              value: {{ .Values.app.scheduleWindow }}
+            - name: RUNNER_WINDOW
+              value: {{ .Values.app.runnerWindow }}
+            - name: CLEANUP_WINDOW
+              value: {{ .Values.app.cleanupWindow }}
+            - name: SENTRY_ENABLED
+              value: {{ .Values.sentry.enabled | quote }}
+            - name: SENTRY_CLIENT_OPTIONS
+              value: {{ .Values.sentry.clientOptions | toJson | quote }}
+            - name: SENTRY_DSN
+              value: {{ .Values.sentry.dsn }}
+            - name: SENTRY_DEBUG
+              value: {{ .Values.sentry.debug | quote }}
+            - name: SENTRY_ENVIRONMENT
+              value: {{ .Values.sentry.environment }}
+            - name: SENTRY_SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | quote }}
+            - name: SENTRY_TRACES_SAMPLE_RATE
+              value: {{ .Values.sentry.tracesSampleRate | quote }}
+            - name: ADDITIONAL_SENTRY_TAGS
+              value: {{ .Values.sentry.additionalTags | toJson | quote }}
+            - name: PROMETHEUS_ENABLED
+              value: {{ .Values.prometheus.enabled | quote }}
+            - name: PROMETHEUS_PATH
+              value: {{ .Values.prometheus.path }}
+            - name: PROMETHEUS_PORT
+              value: {{ .Values.prometheus.port | quote }}
+            - name: PROMETHEUS_LATENCY_HISTOGRAMS_ENABLED
+              value: {{ .Values.prometheus.latencyHistogramsEnabled | quote }}
+{% endraw %}
+            {% if db_choice == 'Postgres' %}
+            - name: POSTGRESDB_URI
+              valueFrom:
+                secretKeyRef:
+{% raw %}
+                  name: {{ include "catalyst-go-app.secretName" . }}
+{% endraw %}
+                  key: POSTGRESDB_URI
+            {% endif %}
+            {% if db_choice == 'Cockroach' %}
+            - name: COCKROACHDB_URI
+              valueFrom:
+                secretKeyRef:
+{% raw %}
+                  name: {{ include "catalyst-go-app.secretName" . }}
+{% endraw %}
+                  key: COCKROACHDB_URI
+            {% endif %}
+{% raw %}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: health
+              containerPort: {{ .Values.healthCheck.port }}
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - "/grpc_health_probe"
+                - "-addr=:{{ .Values.service.port }}"
+          readinessProbe:
+            exec:
+              command:
+                - "/grpc_health_probe"
+                - "-addr=:{{ .Values.service.port }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{% endraw %}

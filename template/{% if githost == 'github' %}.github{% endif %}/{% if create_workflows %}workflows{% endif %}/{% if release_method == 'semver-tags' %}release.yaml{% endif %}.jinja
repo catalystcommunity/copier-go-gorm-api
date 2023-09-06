@@ -1,0 +1,68 @@
+name: Release
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+    paths:
+      - 'main.go'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - 'helm_chart/**'
+jobs:
+  release:
+    name: Release chart
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        token: {% raw %}${{ secrets.AUTOMATION_PAT }}{% endraw %}
+        fetch-depth: 0
+    - name: setup git config
+      run: |
+        git config --global user.name "{{ release_git_user_name }}"
+        git config --global user.email "{{ release_git_user_email }}"
+    - name: Get semver-tags
+      run: |
+        wget -c https://github.com/catalystsquad/semver-tags/releases/download/v0.3.3/semver-tags.tar.gz -O - | tar -xz
+    - name: Semver Tags Run
+      id: semver-tags
+      run: |
+        bash ./.github/scripts/do-chart-release.sh fullrun . helm_chart
+    - if: steps.semver-tags.outputs.RELEASED_CHANGES == 'true'
+      name: Build and push image to ECR
+      uses: catalystsquad/action-build-push-image-ecr@v1
+      with:
+        aws-region: us-west-2
+        aws-access-key-id: {% raw %}${{ secrets.CICD_AWS_ACCESS_KEY_ID }}{% endraw %}
+        aws-secret-access-key: {% raw %}${{ secrets.CICD_AWS_SECRET_ACCESS_KEY }}{% endraw %}
+        role-to-assume: {% raw %}${{ secrets.COMMON_CICD_ROLE_ARN }}{% endraw %}
+        role-skip-session-tagging: true
+        # add extra account access here
+        # extra-account-access: 111111111111
+        tag-versions: latest,{% raw %}${{ steps.semver-tags.outputs.NEW_VERSION }}{% endraw %}
+        checkout: 'false'
+    - if: steps.semver-tags.outputs.RELEASED_CHANGES == 'true'
+      name: Checkout Chart repository
+      uses: actions/checkout@v3
+      with:
+        token: {% raw %}${{ secrets.AUTOMATION_PAT }}{% endraw %}
+        repository: {{ helm_repo }}
+        path: chart-repository
+    - if: steps.semver-tags.outputs.RELEASED_CHANGES == 'true'
+      name: Upload chart to chart repository
+      shell: bash
+      run: |
+        helm dependency update ./helm_chart
+        helm package ./helm_chart -d ./chart-repository/
+        cd ./chart-repository
+        helm repo index .
+        git add .
+        git commit -m "ci: added new helm chart to repository"
+        git push
