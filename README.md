@@ -8,7 +8,7 @@ Install copier: https://copier.readthedocs.io/en/stable/#installation
 
 Execute the copy command and reference this Github repository:
 ```sh
-copier copy https://github.com/catalystsquad/copier-copier-go-cobra-app ./
+copier copy https://github.com/catalystsquad/copier-go-cobra-app ./
 ```
 
 # Release methods

@@ -1,0 +1,33 @@
+name: Build and push image to image host
+on:
+  release:
+    types: [created]
+jobs:
+  build-push-image:
+    runs-on: ubuntu-latest
+    steps:
+    {%- if image_host == 'aws-ecr' %}
+      - name: Build and push image to ECR
+        uses: catalystsquad/action-build-push-image-ecr@v1
+        with:
+          aws-access-key-id: ${{ secrets.CICD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CICD_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.COMMON_CICD_ROLE_ARN }}
+          aws-region: us-west-2
+          # add extra account access here
+          # extra-account-access: 111111111111
+          {%- if github_private_access %}
+          build-secrets: |
+            "GIT_PAT=${{ secrets.AUTOMATION_PAT }}"
+          {%- endif %}
+    {%- elif image_host == 'quay' %}
+      - name: Build and push image to quay.io
+        uses: catalystsquad/action-build-push-image-quay@v1
+        with:
+          username: ${{ secrets.QUAY_DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.QUAY_DOCKER_REGISTRY_PASSWORD }}
+          {%- if github_private_access %}
+          build-secrets: |
+            "GIT_PAT=${{ secrets.AUTOMATION_PAT }}"
+          {%- endif %}
+    {%- endif %}

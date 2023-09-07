@@ -78,8 +78,8 @@ release_method:
   when: "{% if githost == 'github' %}true{% endif %}"
   default: semantic-release
   choices:
-    - semantic-release
     - semver-tags
+    - semantic-release
     - None
 
 release_git_user_name:

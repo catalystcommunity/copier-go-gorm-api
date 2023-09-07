@@ -36,6 +36,7 @@ jobs:
       run: |
         bash ./.github/scripts/do-chart-release.sh fullrun . helm_chart
     - if: steps.semver-tags.outputs.RELEASED_CHANGES == 'true'
+    {%- if image_host == 'aws-ecr' %}
       name: Build and push image to ECR
       uses: catalystsquad/action-build-push-image-ecr@v1
       with:
@@ -48,6 +49,15 @@ jobs:
         # extra-account-access: 111111111111
         tag-versions: latest,{% raw %}${{ steps.semver-tags.outputs.NEW_VERSION }}{% endraw %}
         checkout: 'false'
+    {%- elif image_host == 'quay' %}
+      name: Build and push image to quay.io
+      uses: catalystsquad/action-build-push-image-quay@v1
+      with:
+        checkout: false
+        tag-versions: latest,{% raw %}${{ steps.semver-tags.outputs.NEW_VERSION }}{% endraw %}
+        username: {% raw %}${{ secrets.QUAY_DOCKER_REGISTRY_USER }}{% endraw %}
+        password: {% raw %}${{ secrets.QUAY_DOCKER_REGISTRY_PASSWORD }}{% endraw %}
+    {%- endif %}
     - if: steps.semver-tags.outputs.RELEASED_CHANGES == 'true'
       name: Checkout Chart repository
       uses: actions/checkout@v3
