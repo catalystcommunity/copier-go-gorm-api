@@ -36,6 +36,48 @@ jobs:
         uses: catalystsquad/action-compile-go@v1
         with: 
           go-version: ~1.21
+{% if release_method == 'semver-tags' and use_protos %}
+  buf-generate:
+    if: github.event.pull_request.draft == false
+    name: Buf Generate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: crazy-max/ghaction-dump-context@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+      - env:
+          GOPROXY: direct
+        run: |
+          go install github.com/catalystsquad/protoc-gen-go-gorm@latest
+          go install github.com/favadi/protoc-go-inject-tag@latest
+      - uses: bufbuild/buf-setup-action@v1.19.0
+        with:
+          github_token: {% raw %}${{ github.token }}{% endraw %}
+      - working-directory: protos
+        run: |
+          buf generate
+          protoc-go-inject-tag -input="gen/go/{{ short_project_name }}/v1/*.pb.gorm.go"
+          protoc-go-inject-tag -input="gen/go/{{ short_project_name }}/v1/*.pb.go"
+      - uses: stefanzweifel/git-auto-commit-action@v4
+  buf-breaking:
+    runs-on: ubuntu-latest
+    needs:
+      - buf-generate
+    if: github.event.pull_request.draft == false
+    name: Buf Breaking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: crazy-max/ghaction-dump-context@v2
+      - uses: actions/checkout@v3
+      - uses: bufbuild/buf-setup-action@v1.19.0
+        with:
+          github_token: {% raw %}${{ github.token }}{% endraw %}
+      - uses: bufbuild/buf-breaking-action@v1
+        with:
+          input: 'protos'
+          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=protos'
+
+{% endif %}
 {%- if enable_pull_request_test %}
   test:
     needs:

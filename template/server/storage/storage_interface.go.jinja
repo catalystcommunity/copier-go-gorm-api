@@ -1,0 +1,18 @@
+package storage
+
+import (
+	"context"
+	{{ short_project_name }}v1 "{{ full_project_name }}/protos/gen/go/{{ short_project_name }}/v1"
+)
+
+var Storage StorageInterface
+
+type StorageInterface interface {
+	Initialize() (shutdown func(), err error)
+	Ready() bool
+	UpsertHellos(ctx context.Context, request *{{ short_project_name }}v1.UpsertHellosRequest) ([]*{{ short_project_name }}v1.Hello, error)
+	DeleteHellos(ctx context.Context, ids []string) error
+	ListHellos(ctx context.Context, request *{{ short_project_name }}v1.ListRequest) ([]*{{ short_project_name }}v1.Hello, error)
+	GetHellos(ctx context.Context, request *{{ short_project_name }}v1.GetRequest) ([]*{{ short_project_name }}v1.Hello, error)
+	GetHello(ctx context.Context, id string) (*{{ short_project_name }}v1.Hello, error)
+}

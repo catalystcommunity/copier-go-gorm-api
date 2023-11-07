@@ -27,6 +27,8 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
+          args:
+            - serve
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -34,16 +36,10 @@ spec:
           env:
             - name: PORT
               value: {{ .Values.service.port | quote }}
-            - name: HTTP_PORT
-              value: {{ .Values.http.port | quote }}
+            - name: GATEWAY_PORT
+              value: {{ .Values.gateway.port | quote }}
             - name: SERVE_HTTP
-              value: {{ .Values.http.enabled | quote }}
-            - name: SCHEDULE_WINDOW
-              value: {{ .Values.app.scheduleWindow }}
-            - name: RUNNER_WINDOW
-              value: {{ .Values.app.runnerWindow }}
-            - name: CLEANUP_WINDOW
-              value: {{ .Values.app.cleanupWindow }}
+              value: {{ .Values.gateway.enabled | quote }}
             - name: SENTRY_ENABLED
               value: {{ .Values.sentry.enabled | quote }}
             - name: SENTRY_CLIENT_OPTIONS
@@ -70,41 +66,39 @@ spec:
               value: {{ .Values.prometheus.latencyHistogramsEnabled | quote }}
 {% endraw %}
             {% if db_choice == 'Postgres' %}
-            - name: POSTGRESDB_URI
+            - name: POSTGRES_URI
               valueFrom:
                 secretKeyRef:
 {% raw %}
                   name: {{ include "catalyst-go-app.secretName" . }}
 {% endraw %}
-                  key: POSTGRESDB_URI
+                  key: POSTGRES_URI
             {% endif %}
             {% if db_choice == 'Cockroach' %}
-            - name: COCKROACHDB_URI
+            - name: COCKROACH_URI
               valueFrom:
                 secretKeyRef:
 {% raw %}
                   name: {{ include "catalyst-go-app.secretName" . }}
 {% endraw %}
-                  key: COCKROACHDB_URI
+                  key: COCKROACH_URI
             {% endif %}
 {% raw %}
           ports:
-            - name: http
+            - name: grpc
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-            - name: health
-              containerPort: {{ .Values.healthCheck.port }}
+            - name: gateway
+              containerPort: {{ .Values.gateway.port }}
               protocol: TCP
           livenessProbe:
-            exec:
-              command:
-                - "/grpc_health_probe"
-                - "-addr=:{{ .Values.service.port }}"
+            httpGet:
+              path: /healthy
+              port: gateway
           readinessProbe:
-            exec:
-              command:
-                - "/grpc_health_probe"
-                - "-addr=:{{ .Values.service.port }}"
+            httpGet:
+              path: /ready
+              port: gateway
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

@@ -1,0 +1,21 @@
+package handlers
+
+import (
+	"context"
+	"errors"
+	{{ short_project_name }}v1 "{{ full_project_name }}/protos/gen/go/{{ short_project_name }}/v1"
+	"{{ full_project_name }}/server/storage"
+)
+
+type ApiServer struct{}
+
+func (a ApiServer) Healthy(ctx context.Context, empty *{{ short_project_name }}v1.Empty) (*{{ short_project_name }}v1.Empty, error) {
+	return &{{ short_project_name }}v1.Empty{}, nil
+}
+
+func (a ApiServer) Ready(ctx context.Context, empty *{{ short_project_name }}v1.Empty) (*{{ short_project_name }}v1.Empty, error) {
+	if storage.Storage.Ready() {
+		return &{{ short_project_name }}v1.Empty{}, nil
+	}
+	return nil, errors.New("")
+}

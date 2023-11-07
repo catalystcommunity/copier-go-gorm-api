@@ -1,7 +1,21 @@
 apiVersion: v2
-name: chart-{{ short_project_name }}
+name: {{ short_project_name }}
 description: Helm chart for {{ short_project_name }}
 type: application
 version: 0.0.0
 appVersion: "0.0.0"
+{% if db_choice == 'None' %}
 dependencies: []
+{% elif db_choice == 'Cockroach' %}
+dependencies:
+  - name: cockroachdb
+    version: ~11.2.1
+    repository: https://charts.cockroachdb.com/
+    condition: appstore.cockroachdb.enabled
+{% elif db_choice == 'Postgres' %}
+dependencies:
+  - name: postgresql
+    version: ~13.2.0
+    repository: https://charts.bitnami.com/bitnami/
+    condition: appstore.postgresql.enabled
+{% endif %}

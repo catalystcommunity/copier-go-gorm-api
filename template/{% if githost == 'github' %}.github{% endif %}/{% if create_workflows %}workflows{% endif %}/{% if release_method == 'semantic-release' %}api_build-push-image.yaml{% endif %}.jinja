@@ -10,24 +10,28 @@ jobs:
       - name: Build and push image to ECR
         uses: catalystsquad/action-build-push-image-ecr@v1
         with:
-          aws-access-key-id: ${{ secrets.CICD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.CICD_AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: ${{ secrets.COMMON_CICD_ROLE_ARN }}
+          docker-context: "./"
+          docker-file: "./Dockerfile"
+          {% raw %}aws-access-key-id: ${{ secrets.CICD_AWS_ACCESS_KEY_ID }}{% endraw %}
+          {% raw %}aws-secret-access-key: ${{ secrets.CICD_AWS_SECRET_ACCESS_KEY }}{% endraw %}
+          {% raw %}role-to-assume: ${{ secrets.COMMON_CICD_ROLE_ARN }}{% endraw %}
           aws-region: us-west-2
           # add extra account access here
           # extra-account-access: 111111111111
           {%- if github_private_access %}
           build-secrets: |
-            "GIT_PAT=${{ secrets.AUTOMATION_PAT }}"
+            {% raw %}"GIT_PAT=${{ secrets.AUTOMATION_PAT }}"{% endraw %}
           {%- endif %}
     {%- elif image_host == 'quay' %}
       - name: Build and push image to quay.io
         uses: catalystsquad/action-build-push-image-quay@v1
         with:
-          username: ${{ secrets.QUAY_DOCKER_REGISTRY_USER }}
-          password: ${{ secrets.QUAY_DOCKER_REGISTRY_PASSWORD }}
+          docker-context: "./"
+          docker-file: "./Dockerfile"
+          {% raw %}username: ${{ secrets.QUAY_DOCKER_REGISTRY_USER }}{% endraw %}
+          {% raw %}password: ${{ secrets.QUAY_DOCKER_REGISTRY_PASSWORD }}{% endraw %}
           {%- if github_private_access %}
           build-secrets: |
-            "GIT_PAT=${{ secrets.AUTOMATION_PAT }}"
+            {% raw %}"GIT_PAT=${{ secrets.AUTOMATION_PAT }}"{% endraw %}
           {%- endif %}
     {%- endif %}

@@ -1,0 +1,29 @@
+package handlers
+
+import (
+	"context"
+	{{ short_project_name }}v1 "{{ full_project_name }}/protos/gen/go/{{ short_project_name }}/v1"
+	"{{ full_project_name }}/server/storage"
+)
+
+func (a ApiServer) UpsertHellos(ctx context.Context, request *{{ short_project_name }}v1.UpsertHellosRequest) (*{{ short_project_name }}v1.Hellos, error) {
+	upsertedHellos, err := storage.Storage.UpsertHellos(ctx, request)
+	return &{{ short_project_name }}v1.Hellos{Hellos: upsertedHellos}, err
+}
+
+func (a ApiServer) DeleteHellos(ctx context.Context, request *{{ short_project_name }}v1.DeleteRequest) (*{{ short_project_name }}v1.DeleteResponse, error) {
+	return &{{ short_project_name }}v1.DeleteResponse{}, storage.Storage.DeleteHellos(ctx, request.Ids)
+}
+
+func (a ApiServer) ListHellos(ctx context.Context, request *{{ short_project_name }}v1.ListRequest) (*{{ short_project_name }}v1.Hellos, error) {
+	if request.Limit == 0 {
+		request.Limit = 100
+	}
+	hellos, err := storage.Storage.ListHellos(ctx, request)
+	return &{{ short_project_name }}v1.Hellos{Hellos: hellos}, err
+}
+
+func (a ApiServer) GetHellos(ctx context.Context, request *{{ short_project_name }}v1.GetRequest) (*{{ short_project_name }}v1.Hellos, error) {
+	hellos, err := storage.Storage.GetHellos(ctx, request)
+	return &{{ short_project_name }}v1.Hellos{Hellos: hellos}, err
+}

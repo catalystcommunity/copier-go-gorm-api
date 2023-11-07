@@ -19,4 +19,4 @@ jobs:
     steps:
       - uses: catalystsquad/action-release-update-chart@v1
         with:
-          token: ${{ secrets.AUTOMATION_PAT }}
+          token: {% raw %}${{ secrets.AUTOMATION_PAT }}{% endraw %}

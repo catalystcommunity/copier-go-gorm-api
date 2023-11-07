@@ -1,0 +1,40 @@
+package test
+
+import (
+	{{ short_project_name }}v1 "{{ full_project_name }}/protos/gen/go/{{ short_project_name }}/v1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/testing/protocmp"
+	"testing"
+	"time"
+)
+
+type {{ short_project_name[0]|upper}}{{short_project_name[1:] }}Suite struct {
+	suite.Suite
+}
+
+func Test{{ short_project_name[0]|upper}}{{short_project_name[1:] }}Suite(t *testing.T) {
+	suite.Run(t, new({{ short_project_name[0]|upper}}{{short_project_name[1:] }}Suite))
+}
+
+func (s *{{ short_project_name[0]|upper}}{{short_project_name[1:] }}Suite) SetupSuite() {
+	initializeApiClient(5 * time.Second)
+	loadTestData(s.T())
+}
+
+func assertProtoEqualitySortById(t *testing.T, expected, actual interface{}, opts ...cmp.Option) {
+	theOpts := []cmp.Option{
+		cmpopts.SortSlices(func(x, y *{{ short_project_name }}v1.Hello) bool {
+			return *x.Id < *y.Id
+		}),
+		protocmp.Transform(),
+		protocmp.SortRepeated(func(x, y *{{ short_project_name }}v1.Hello) bool {
+			return *x.Id < *y.Id
+		}),
+	}
+	theOpts = append(theOpts, opts...)
+	diff := cmp.Diff(expected, actual, theOpts...)
+	require.Empty(t, diff)
+}

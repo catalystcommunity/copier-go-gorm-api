@@ -6,16 +6,20 @@ WORKDIR /workspace
 ENV GRPC_HEALTH_PROBE_VERSION=v0.4.19
 RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && chmod +x /bin/grpc_health_probe
 {%- endif %}
-COPY go.mod .
-COPY go.sum .
+{%- if use_protos %}
+COPY protos ./protos
+{%- endif %}
+COPY server/go.mod server/go.mod
+COPY server/go.sum server/go.sum
 {%- if github_private_access %}
 # configure git with secrets
 RUN --mount=type=secret,id=GIT_PAT GIT_PAT=$(cat /run/secrets/GIT_PAT) && git config --global url."https://$GIT_PAT@github.com".insteadOf "https://github.com"
 {%- endif %}
 # download dependencies
+WORKDIR server
 RUN go mod download
 # copy source code
-COPY . .
+COPY server .
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o main main.go
 
@@ -23,10 +27,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o main mai
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --from=builder /workspace/main .
+COPY --from=builder /workspace/server/main .
 {%- if grpc_health_probe %}
 COPY --from=builder /bin/grpc_health_probe ./grpc_health_probe
 {%- endif %}
 USER 65532:65532
 
-ENTRYPOINT ["/main", "serve"]
+ENTRYPOINT ["/main"]

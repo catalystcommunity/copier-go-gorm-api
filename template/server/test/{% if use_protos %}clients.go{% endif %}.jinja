@@ -1,0 +1,59 @@
+package test
+
+import (
+	"context"
+	"time"
+
+	{{ short_project_name }}v1 "{{ full_project_name }}/protos/gen/go/{{ short_project_name }}/v1"
+	"google.golang.org/grpc"
+)
+
+var ApiClient = initializeApiClient(5 * time.Second)
+
+func initializeApiClient(timeout time.Duration) {{ short_project_name }}v1.ApiClient {
+	connectTo := "127.0.0.1:6000"
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, connectTo, grpc.WithInsecure())
+	if err != nil {
+		panic(err)
+	}
+	return {{ short_project_name }}v1.NewApiClient(conn)
+}
+
+func UpsertHellos(hellos []*{{ short_project_name }}v1.Hello) ([]*{{ short_project_name }}v1.Hello, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	response, err := ApiClient.UpsertHellos(ctx, &{{ short_project_name }}v1.UpsertHellosRequest{Hellos: hellos})
+	if err != nil {
+		return nil, err
+	} else if response == nil {
+		return nil, nil
+	} else {
+		return response.Hellos, err
+	}
+}
+
+func DeleteHellos(ids []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := ApiClient.DeleteHellos(ctx, &{{ short_project_name }}v1.DeleteRequest{Ids: ids})
+	return err
+}
+
+func ListHellos(limit, offset int, orderBy string) ([]*{{ short_project_name }}v1.Hello, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	response, err := ApiClient.ListHellos(ctx, &{{ short_project_name }}v1.ListRequest{Limit: int32(limit), Offset: int32(offset), OrderBy: orderBy})
+	if err != nil {
+		return nil, err
+	}
+	return response.Hellos, err
+}
+
+func GetHellosById(ids []string) ([]*{{ short_project_name }}v1.Hello, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	response, err := ApiClient.GetHellos(ctx, &{{ short_project_name }}v1.GetRequest{Ids: ids})
+	return response.Hellos, err
+}

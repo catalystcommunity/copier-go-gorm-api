@@ -3,6 +3,7 @@ _subdirectory: template
 full_project_name:
   type: str
   help: "Full project name (go module path) ex: github.com/catalystsquad/example-app"
+  default: "github.com/catalystcommunity/example-app"
 
 short_project_name:
   type: str
@@ -67,7 +68,7 @@ image_host:
   type: str
   help: "Hosting service for your image"
   when: "{% if githost == 'github' %}true{% endif %}"
-  default: aws-ecr
+  default: quay
   choices:
     AWS ECR: aws-ecr
     Quay: quay
@@ -76,7 +77,7 @@ release_method:
   type: str
   help: "Release method to use"
   when: "{% if githost == 'github' %}true{% endif %}"
-  default: semantic-release
+  default: semver-tags
   choices:
     - semver-tags
     - semantic-release
@@ -111,6 +112,12 @@ grpc_health_probe:
   help: "Add GRPC Health Probe to Dockerfile"
   default: false
 
+use_protos:
+  type: bool
+  help: "Use protobufs and tooling like buf for it"
+  when: "{% if release_method == 'semver-tags' %}true{% endif %}"
+  default: true
+
 image_registry_domain:
   type: str
   help: "Image registry name"
@@ -126,7 +133,7 @@ helm_repo:
 db_choice:
   type: str
   help: "DB choice for the helm chart"
-  default: Cockroach
+  default: Postgres
   choices:
     - Cockroach
     - Postgres

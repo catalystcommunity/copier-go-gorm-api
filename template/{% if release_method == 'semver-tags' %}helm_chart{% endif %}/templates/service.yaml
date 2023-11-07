@@ -8,8 +8,12 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: grpc
       protocol: TCP
-      name: http
+      name: grpc
+    - port: {{ .Values.gateway.port }}
+      targetPort: gateway
+      protocol: TCP
+      name: gateway
   selector:
     {{- include "catalyst-go-app.selectorLabels" . | nindent 4 }}
