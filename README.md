@@ -1,6 +1,6 @@
-# copier-go-cobra-app
+# copier-go-gorm-api
 
-Copier template for a golang cobra app with CI/CD.
+Copier template for a protobuf based golang/gorm api with CI/CD.
 
 ## Usage
 
@@ -8,7 +8,7 @@ Install copier: https://copier.readthedocs.io/en/stable/#installation
 
 Execute the copy command and reference this Github repository:
 ```sh
-copier copy https://github.com/catalystsquad/copier-go-cobra-app ./
+copier copy https://github.com/catalystcommunity/copier-go-gorm-api ./
 ```
 
 # Release methods
