@@ -2,12 +2,12 @@ _subdirectory: template
 
 full_project_name:
   type: str
-  help: "Full project name (go module path) ex: github.com/catalystsquad/exampleApp"
-  default: "github.com/catalystcommunity/exampleApp"
+  help: "Full project name (go module path), don't use caps or underscores, ex: github.com/catalystsquad/exampleapp"
+  default: "github.com/catalystcommunity/exampleapp"
 
 short_project_name:
   type: str
-  help: "Repository name, ex: exampleApp"
+  help: "Repository name, ex: exampleapp"
   default: "{{ full_project_name | regex_replace('.*/', '') }}"
 
 license_type:
