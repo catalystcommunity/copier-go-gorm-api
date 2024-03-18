@@ -80,16 +80,17 @@ appstore:
     secrets:
       POSTGRES_URI: postgresql://postgres:postgres@api-postgresql:5432?sslmode=disable
 
-postgresql:
-  auth:
-    enablePostgresUser: true
-    postgresPassword: postgres
-  tls:
-    enabled: false
-  # disable persistence by default
-  primary:
-    persistence:
+global:
+  postgresql:
+    auth:
+      enablePostgresUser: true
+      postgresPassword: postgres
+    tls:
       enabled: false
+    # disable persistence by default
+    primary:
+      persistence:
+        enabled: false
 {% elif db_choice == 'None' %}
   cockroachdb:
     enabled: false
