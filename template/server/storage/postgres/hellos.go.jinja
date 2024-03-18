@@ -8,7 +8,7 @@ import (
 
 func (p PostgresStorage) UpsertHellos(ctx context.Context, request *{{ short_project_name }}v1.UpsertHellosRequest) ([]*{{ short_project_name }}v1.Hello, error) {
 	helloProtos := {{ short_project_name }}v1.HelloProtos(request.Hellos)
-	err := helloProtos.Upsert(ctx, db, nil, nil, true)
+	_, err := helloProtos.Upsert(ctx, db)
 	return helloProtos, err
 }
 
