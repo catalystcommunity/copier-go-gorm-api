@@ -2,12 +2,12 @@ _subdirectory: template
 
 full_project_name:
   type: str
-  help: "Full project name (go module path) ex: github.com/catalystsquad/example-app"
-  default: "github.com/catalystcommunity/example-app"
+  help: "Full project name (go module path) ex: github.com/catalystsquad/exampleApp"
+  default: "github.com/catalystcommunity/exampleApp"
 
 short_project_name:
   type: str
-  help: "Repository name, ex: example-app"
+  help: "Repository name, ex: exampleApp"
   default: "{{ full_project_name | regex_replace('.*/', '') }}"
 
 license_type:
@@ -132,7 +132,7 @@ helm_repo:
 
 db_choice:
   type: str
-  help: "DB choice for the helm chart"
+  help: "DB choice for the helm chart (just use postgres, this isn't implemented at all)"
   default: Postgres
   choices:
     - Cockroach
