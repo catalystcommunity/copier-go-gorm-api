@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "{{ short_project_name }}/v1/enums.proto";
 import "google/protobuf/struct.proto";
 
+option (gorm.file_opts) = {generate: true};
 
 message Hello {
   option (gorm.opts) = {ormable: true};
