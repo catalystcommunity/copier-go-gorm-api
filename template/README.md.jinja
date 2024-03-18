@@ -14,5 +14,7 @@ In order to run this code you will need the following on your path:
 
 If using protos and the protos have not been built or are not up to date, you will be sad. `./tools.sh build_protos` will handle that.
 
+If you use skaffold, make sure you have the helm repos added (look at skaffold.yaml for the command to run to do so).
+
 Otherwise, you can `./tools.sh run` or `skaffold dev` if you prefer. Running via tools will run it with `go` and skaffold will run in a kubernetes cluster.
 

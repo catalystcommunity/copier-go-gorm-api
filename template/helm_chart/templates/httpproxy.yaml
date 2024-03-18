@@ -1,0 +1,36 @@
+{{- if .Values.gateway.httpProxy.enabled }}
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: {{ include "catalyst-go-app.fullname" . }}
+spec:
+  {{- if .Values.gateway.httpProxy.fqdn }}
+  virtualhost:
+    fqdn: {{ .Values.gateway.httpProxy.fqdn }}
+    tls:
+      secretName: {{ .Values.gateway.httpProxy.tlsSecretName }}
+  {{- if .Values.gateway.httpProxy.externalAuth.enabled }}
+    authorization:
+      extensionRef:
+        name: {{ .Values.gateway.httpProxy.externalAuth.extensionRef.name }}
+        namespace: {{ .Values.gateway.httpProxy.externalAuth.extensionRef.namespace }}
+    {{- with .Values.gateway.httpProxy.externalAuth.withRequestBody }}
+      withRequestBody:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.gateway.httpProxy.externalAuth.responseTimeout }}
+      responseTimeout: {{ . }}
+    {{- end }}
+  {{- end }}
+    {{- with .Values.gateway.httpProxy.corsPolicy }}
+    corsPolicy:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  routes:
+  - conditions:
+    - prefix: {{ .Values.gateway.httpProxy.prefix }}
+    services:
+    - name: {{ include "catalyst-go-app.fullname" . }}
+      port: {{ .Values.gateway.httpProxy.port }}
+{{- end }}

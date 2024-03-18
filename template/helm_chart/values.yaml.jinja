@@ -1,0 +1,137 @@
+replicaCount: 1
+
+image:
+  repository: 'quay.io/catalystcommunity/{{ short_project_name }}'
+  pullPolicy: IfNotPresent
+
+imagePullSecretCredentials: ""
+imagePullSecrets: []
+
+healthCheck:
+  enabled: true
+  path: /health
+  port: 6000
+
+http:
+  enabled: true
+  port: 6001
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 2000
+  runAsGroup: 2000
+
+service:
+  type: ClusterIP
+  port: 6000
+
+resources: {}
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+serviceMonitor:
+  enabled: false
+  namespaceSelector: {}
+  annotations: {}
+  labels: {}
+  interval: null
+  scrapeTimeout: null
+  relabelings: []
+
+appstore:
+
+  cockroachdb:
+    enabled: false
+  postgres:
+    enabled: true
+    secrets:
+      POSTGRES_URI: postgresql://postgres:postgres@api-postgresql:5432?sslmode=disable
+
+postgresql:
+  auth:
+    enablePostgresUser: true
+    postgresPassword: postgres
+  tls:
+    enabled: false
+  # disable persistence by default
+  primary:
+    persistence:
+      enabled: false
+
+
+migrations:
+  #ttlSecondsAfterFinished: 0 # defines how long the job stays in k8s after completion, default to 1 day. Recommendation is to keep this relatively short so we don't have a long permanent record of migration pods. Not present by default because argocd cleans up the job for us when a new version is deployed
+  restartPolicy: OnFailure
+  backoffLimit: 100
+  resources:
+    requests:
+      cpu: 100m
+      memory: 250Mi
+
+sentry:
+  enabled: false
+prometheus:
+  enabled: false
+
+app: {}
+
+prometheus:
+  enabled: false
+  path: /metrics
+  port: 9090
+  latencyHistogramsEnabled: true
+
+gateway:
+  enabled: true
+  port: 6001
+  restartDelay: 5s
+  httpProxy:
+    enabled: false
+    # fqdn: sub.example.com
+    tlsSecretName: cert-manager/wildcard-certificate
+    prefix: /v1
+    port: 6001
+    corsPolicy:
+      allowHeaders:
+      - authorization
+      - content-type
+      allowMethods:
+      - '*'
+      allowOrigin:
+      - '*'
+    externalAuth:
+      enabled: false
+      # extensionRef:
+      #   name: external-auth
+      #   namespace: external-auth
+      # withRequestBody:
+      #   maxRequestBytes: 100000
+      #   allowPartialMessage: true
+      #   packAsBytes: true
+      # responseTimeout: 1s
