@@ -31,7 +31,7 @@ build_protos() {
 }
 
 run() {
-  cd server; go mod tidy; go run main.go; cd -
+  cd server; go mod tidy; go run main.go serve; cd -
 }
 
 setup() {
