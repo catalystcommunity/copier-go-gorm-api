@@ -1,7 +1,29 @@
 package main
 
-import "{{ full_project_name }}/server/cmd"
+import
+
+
+import (
+	"github.com/KimMachineGun/automemlimit"
+	"{{ full_project_name }}/server/cmd"
+	//"{{ full_project_name }}/server/cmd/generate"
+	"github.com/catalystsquad/app-utils-go/logging"
+	"github.com/urfave/cli/v2"
+	_ "go.uber.org/automaxprocs"
+	"os"
+)
 
 func main() {
-	cmd.Execute()
+	app := &cli.App{
+		Commands: []*cli.Command{
+			cmd.ServeCommand,
+			cmd.MigrateCommand,
+		},
+
+	}
+	err := app.Run(os.Args)
+	if err != nil {
+		// log fatal so we exit with the proper exit code, this is important for containerized deployment health checks
+		logging.Log.WithError(err).Fatal("runtime error")
+	}
 }

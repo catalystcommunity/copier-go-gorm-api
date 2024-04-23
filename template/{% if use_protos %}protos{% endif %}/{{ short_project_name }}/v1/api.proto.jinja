@@ -5,6 +5,17 @@ import "{{ short_project_name }}/v1/requests.proto";
 import "google/api/annotations.proto";
 
 service Api {
+  // Health check
+  rpc Healthy(Empty) returns (Empty) {
+    option (google.api.http) = {get: "/healthy"};
+  }
+  // Readiness check
+  rpc Ready(Empty) returns (Empty) {
+    option (google.api.http) = {get: "/ready"};
+  }
+  
+  // Everything else
+
   rpc UpsertHellos(UpsertHellosRequest) returns (Hellos) {
     option (google.api.http) = {
       post: "/v1/hellos"
@@ -25,13 +36,5 @@ service Api {
     option (google.api.http) = {
       post: "/v1/hellos/get"
     };
-  }
-  // Health check
-  rpc Healthy(Empty) returns (Empty) {
-    option (google.api.http) = {get: "/healthy"};
-  }
-  // Readiness check
-  rpc Ready(Empty) returns (Empty) {
-    option (google.api.http) = {get: "/ready"};
   }
 }

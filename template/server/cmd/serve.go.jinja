@@ -14,85 +14,162 @@ import (
 	"{{ full_project_name }}/server/handlers"
 	"{{ full_project_name }}/server/storage"
 	"{{ full_project_name }}/server/storage/postgres"
+	"github.com/gammazero/workerpool"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Start and serve the {{ short_project_name }} api",
-	Run: func(cmd *cobra.Command, args []string) {
-		serve()
+
+
+var ServeCommand = &cli.Command{
+	Name:  "serve",
+	Usage: "Start and serve the {{ short_project_name }} api",
+	Flags: flags,
+	Action: func(ctx *cli.Context) error {
+		return Serve()
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(serveCmd)
+
+var flags = []cli.Flag{
+	&cli.StringFlag{
+		Name: "postgres-uri",
+		Aliases: []string{"pgdbu"},
+		Value: "postgresql://postgres:postgres@localhost:5432?sslmode=disable",
+		Usage: "The uri to use to connect to postgres",
+		Destination: &config.PostgresUri,
+		EnvVars: []string{"POSTGRES_URI"},
+	},
+	&cli.IntFlag{
+		Name:        "grpc-max-message-size-bytes",
+		Aliases:     []string{"gmmsb"},
+		Value:       524288000, // 50MB
+		Usage:       "GRPC max message size bytes",
+		EnvVars:     []string{"GRPC_MAX_MSG_SIZE_BYTES"},
+		Destination: &config.GrpcMaxMsgSizeBytes,
+	},
+	&cli.StringFlag{
+		Name:        "corndogs-uri",
+		Aliases:     []string{"cu"},
+		Value:       "localhost:5080",
+		Usage:       "Corndogs uri",
+		EnvVars:     []string{"CORNDOGS_URI"},
+		Destination: &config.CorndogsUri,
+	},
+	&cli.IntFlag{
+		Name:        "gateway-port",
+		Aliases:     []string{"gp"},
+		Value:       6001,
+		Usage:       "Port to expose grpc gateway on",
+		EnvVars:     []string{"GATEWAY_PORT"},
+		Destination: &config.GatewayPort,
+	},
+	&cli.DurationFlag{
+		Name:        "gateway-restart-delay",
+		Aliases:     []string{"gru"},
+		Value:       5 * time.Second,
+		Usage:       "Delay before restarting grpc gateway if it crashes",
+		EnvVars:     []string{"GATEWAY_RESTART_DELAY"},
+		Destination: &config.GatewayRestartDelay,
+	},
+	&cli.BoolFlag{
+		Name:        "gateway-enabled",
+		Aliases:     []string{"ge"},
+		Value:       true,
+		Usage:       "When true, the grpc gateway is enabled",
+		EnvVars:     []string{"GATEWAY_ENABLED"},
+		Destination: &config.GatewayEnabled,
+	},
 }
 
-var Server *pkg.GrpcServer
-var grpcConfig pkg.GrpcServerConfig
 
-func serve() {
-	var storageShutdown func()
-	var err error
+var Server *pkg.GrpcServerockroach
+
+func Serve() error {
+	// set stores
+	Storage.AppStore = postgres_store.PostgresStorage
+
+	// init stores and defer any functions we need to
+	deferredStoreFuncs := initStores()
+	for _, deferredFunc := range deferredStoreFuncs {
+		defer deferredFunc()
+	}
+	// start consumers against corndogs for specific task sets
+	// go consumers.StartMyConsumers()
+
 	// init grpc server config
-	grpcConfig = config.InitAPIConfig()
+	grpcConfig := config.InitAPIConfig()
+	grpcConfig.HealthServer = NewHealthChecker()
+	// initialize auth middleware caches
+	err := auth.InitializeAuthMiddlewareCaches()
+	if err != nil {
+		errorutils.LogOnErr(nil, "error initializing auth middleware caches", err)
+		return err
+	}
 	// init grpc server
 	Server, err = pkg.NewGrpcServer(grpcConfig)
 	if err != nil {
 		errorutils.LogOnErr(nil, "error initializing grpc server", err)
-		return
-	}
-	// init storage
-	if storageShutdown, err = initializeStorage(); err != nil {
-		return
-	}
-	if storageShutdown != nil {
-		defer storageShutdown()
+		return err
 	}
 	// register service implementations
 	registerServices()
-	// run the gateway in the background
-	runGateway()
+	if config.GatewayEnabled {
+		runGateway(grpcConfig)
+	}
 	// run the grpc server
 	err = Server.Run()
 	errorutils.LogOnErr(nil, "error running grpc server", err)
+	return err
 }
 
-func initializeStorage() (func(), error) {
-	switch config.StorageType {
-	case storage.PostgresStorageType:
-		storage.Storage = postgres.PostgresStorage{}
-	}
-	return storage.Storage.Initialize()
+func initStores() []func() {
+	// initialize stores using a worker pool to speed up startup
+	pool := workerpool.New(5)
+	deferredFunctions := []func(){}
+
+	pool.Submit(func() {
+		deferredFunc, err := Storage.AppStore.Initialize()
+		errorutils.PanicOnErr(nil, "error initializing app store", err)
+		if deferredFunc != nil {
+			deferredFunctions = append(deferredFunctions, deferredFunc)
+		}
+		logging.Log.Info("app store initialized")
+	})
+
+	pool.StopWait()
+	return deferredFunctions
 }
 
 func registerServices() {
-	var apiServer {{ short_project_name }}v1.ApiServer = &handlers.ApiServer{}
+	apiServer := &handlers.ApiServer{}
 	{{ short_project_name }}v1.RegisterApiServer(Server.Server, apiServer)
 }
 
-func runGateway() {
+func runGateway(grpcConfig pkg.GrpcServerConfig) {
 	grpcAddress := fmt.Sprintf("localhost:%d", grpcConfig.Port)
 	httpAddress := fmt.Sprintf(":%d", config.GatewayPort)
-	mux := runtime.NewServeMux(runtime.WithMetadata(func(_ context.Context, req *http.Request) metadata.MD {
-		return metadata.New(map[string]string{
-			"grpcgateway-http-path": req.URL.Path,
-		})
-	}))
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := {{ short_project_name }}v1.RegisterApiHandlerFromEndpoint(context.Background(), mux, grpcAddress, opts)
-	errorutils.PanicOnErr(nil, "error registering grpc gateway api handler", err)
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			// TODO: Separate these later if we need to, these allow large requests and responses. This is necessary because cherre's search responses can be enormous
+			grpc.MaxCallRecvMsgSize(config.GrpcMaxMsgSizeBytes),
+			grpc.MaxCallSendMsgSize(config.GrpcMaxMsgSizeBytes),
+		),
+	}
+	var err error
+	if err = {{ short_project_name }}v1.RegisterApiServiceHandlerFromEndpoint(context.Background(), mux, grpcAddress, opts); err != nil {
+		errorutils.PanicOnErr(nil, "error registering grpc gateway api service handler", err)
+	}
 	// forever loop to restart on crash
 	go func(httpAddress string, mux *runtime.ServeMux) {
 		for {
 			logging.Log.WithFields(logrus.Fields{"address": httpAddress}).Info("http gateway started")
+			// in live environments cors is handled by the ingress, not the api. Allowing all cors enables frictionless local ui dev, since the ui sends options requests
 			err = http.ListenAndServe(httpAddress, cors.AllowAll().Handler(mux))
 			errorutils.LogOnErr(nil, "error running grpc gateway", err)
 			time.Sleep(config.GatewayRestartDelay)
