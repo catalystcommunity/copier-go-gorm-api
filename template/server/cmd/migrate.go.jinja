@@ -4,9 +4,9 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/catalystsquad/app-utils-go/env"
-	"github.com/catalystsquad/app-utils-go/errorutils"
-	"github.com/catalystsquad/app-utils-go/logging"
+	"github.com/catalystcommunity/app-utils-go/env"
+	"github.com/catalystcommunity/app-utils-go/errorutils"
+	"github.com/catalystcommunity/app-utils-go/logging"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/postgres"

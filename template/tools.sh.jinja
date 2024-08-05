@@ -15,7 +15,7 @@ usage() {
 
 install_proto_tools() {
   echo "Installing proto tooling"
-  go install github.com/catalystsquad/protoc-gen-go-gorm@latest
+  go install github.com/catalystcommunity/protoc-gen-go-gorm@latest
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go install github.com/mitchellh/protoc-gen-go-json@latest
 	npm install @bufbuild/protobuf @bufbuild/protoc-gen-es @bufbuild/buf @openapitools/openapi-generator-cli

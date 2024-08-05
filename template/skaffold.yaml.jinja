@@ -17,7 +17,7 @@ deploy:
             command:
               - sh
               - -c
-              - helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo add tnlcommunity https://raw.githubusercontent.com/tnlcommunity/charts/main && helm repo add catalystsquad https://raw.githubusercontent.com/catalystsquad/charts/main && helm repo add catalystcommunity https://raw.githubusercontent.com/catalystcommunity/charts/main
+              - helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo add tnlcommunity https://raw.githubusercontent.com/tnlcommunity/charts/main && helm repo add catalystcommunity https://raw.githubusercontent.com/catalystcommunity/charts/main && helm repo add catalystcommunity https://raw.githubusercontent.com/catalystcommunity/charts/main
     releases:
       - name: api
         namespace: api

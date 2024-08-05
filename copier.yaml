@@ -2,7 +2,7 @@ _subdirectory: template
 
 full_project_name:
   type: str
-  help: "Full project name (go module path), don't use caps or underscores, ex: github.com/catalystsquad/exampleapp"
+  help: "Full project name (go module path), don't use caps or underscores, ex: github.com/catalystcommunity/exampleapp"
   default: "github.com/catalystcommunity/exampleapp"
 
 short_project_name:
@@ -93,7 +93,7 @@ release_git_user_email:
   type: str
   help: "User email to use when committing automated release changes"
   when: "{% if release_method == 'semver-tags' %}true{% endif %}"
-  default: "<engineering@catalystsquad.com>"
+  default: "<engineering@catalystcommunity.com>"
 
 enable_pull_request_test:
   type: bool

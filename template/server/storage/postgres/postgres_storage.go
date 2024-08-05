@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/catalystsquad/app-utils-go/env"
-	"github.com/catalystsquad/app-utils-go/logging"
+	"github.com/catalystcommunity/app-utils-go/env"
+	"github.com/catalystcommunity/app-utils-go/logging"
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
